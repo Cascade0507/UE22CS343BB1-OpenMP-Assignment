@@ -99,7 +99,7 @@ void printProcessorState( int processorId, processorNode node );
 messageBuffer messageBuffers[ NUM_PROCS ];
 // IMPLEMENT
 // Create locks to ensure thread-safe access to each processor's message buffer.
-msgBufferLocks[ NUM_PROCS ];
+omp_lock_t msgBufferLocks[ NUM_PROCS ];
 
 int main( int argc, char * argv[] ) {
     if (argc < 2) {
@@ -110,6 +110,7 @@ int main( int argc, char * argv[] ) {
     
     // IMPLEMENT
     // set number of threads to NUM_PROCS
+    omp_set_num_threads(NUM_PROCS);
 
     for ( int i = 0; i < NUM_PROCS; i++ ) {
         messageBuffers[ i ].count = 0;
@@ -117,16 +118,19 @@ int main( int argc, char * argv[] ) {
         messageBuffers[ i ].tail = 0;
         // IMPLEMENT
         // initialize the locks in msgBufferLocks
+        omp_init_lock(&msgBufferLocks[i]);
     }
     processorNode node;
 
     // IMPLEMENT
     // Create the omp parallel region with an appropriate data environment
+    #pragma omp parallel 
     {
         int threadId = omp_get_thread_num();
         initializeProcessor( threadId, &node, dirName );
         // IMPLEMENT
-        // wait for all processors to complete initialization before proceeding
+        // wait for all processors to complete initialization before proceeding 
+        #pragma omp barrier
 
         message msg;
         message msgReply;
