@@ -157,8 +157,8 @@ int main( int argc, char * argv[] ) {
 
                 // IMPLEMENT
                 // extract procNodeAddr and memBlockAddr from message address
-                byte procNodeAddr = ;
-                byte memBlockAddr = ;
+                byte procNodeAddr = instr.address >> 4;
+                byte memBlockAddr = instr.address & 0x04;
                 byte cacheIndex = memBlockAddr % CACHE_SIZE;
 
                 switch ( msg.type ) {
@@ -170,6 +170,7 @@ int main( int argc, char * argv[] ) {
                         // S: update directory and send value using REPLY_RD
                         // EM: forward request to the current owner node for
                         //     writeback intervention using WRITEBACK_INT
+
                         break;
 
                     case REPLY_RD:
@@ -341,8 +342,8 @@ int main( int argc, char * argv[] ) {
             // IMPLEMENT
             // Extract the home node's address and memory block index from
             // instruction address
-            byte procNodeAddr = ;
-            byte memBlockAddr = ;
+            byte procNodeAddr = instr.address >> 4;           
+            byte memBlockAddr = instr.address & 0x0F;
             byte cacheIndex = memBlockAddr % CACHE_SIZE;
 
           if ( instr.type == 'R' ) {
@@ -381,6 +382,12 @@ void sendMessage( int receiver, message msg ) {
     // IMPLEMENT
     // Ensure thread safety while adding a message to the receiver's buffer
     // Manage buffer indices correctly to maintain a circular queue structure
+    omp_set_lock(&msgBufferLocks[receiver]);
+    int tail = messageBuffers[receiver].tail;
+    messageBuffers[receiver].queue[tail] = msg;
+    messageBuffers[receiver].tail = (tail + 1) % MSG_BUFFER_SIZE;
+    messageBuffers[receiver].count++;
+    omp_unset_lock(&msgBufferLocks[receiver]);
 }
 
 void handleCacheReplacement( int sender, cacheLine oldCacheLine ) {
