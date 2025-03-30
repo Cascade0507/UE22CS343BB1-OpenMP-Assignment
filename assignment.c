@@ -170,7 +170,7 @@ int main( int argc, char * argv[] ) {
                         // S: update directory and send value using REPLY_RD
                         // EM: forward request to the current owner node for
                         //     writeback intervention using WRITEBACK_INT
-
+                         
                         break;
 
                     case REPLY_RD:
@@ -394,20 +394,27 @@ void handleCacheReplacement( int sender, cacheLine oldCacheLine ) {
     // IMPLEMENT
     // Notify the home node before a cacheline gets replaced
     // Extract the home node's address and memory block index from cacheline address
-    byte memBlockAddr = ;
-    byte procNodeAddr = ;
-    
+    byte memBlockAddr = oldCacheLine.address >> 4;
+    byte procNodeAddr = oldCacheLine.address & 0x0F;
+    message msg;
+    msg.sender = sender;
+    msg.address = oldCacheLine.address;
     switch ( oldCacheLine.state ) {
         case EXCLUSIVE:
         case SHARED:
             // IMPLEMENT
             // If cache line was shared or exclusive, inform home node about the
             // eviction
+            msg.type = EVICT_SHARED;
+            sendMessage(procNodeAddr,msg);
             break;
         case MODIFIED:
             // IMPLEMENT
             // If cache line was modified, send updated value to home node 
             // so that memory can be updated before eviction
+            msg.type = EVICT_MODIFIED;
+            msg.value = oldCacheLine.value;
+            sendMessage(procNodeAddr,msg);
             break;
         case INVALID:
             // No action required for INVALID state
